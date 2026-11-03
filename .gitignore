@@ -147,3 +147,11 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+
+# Nexora runtime secrets and local state
+.env
+.env.*
+!.env.example
+/data/
+/auth_info/
