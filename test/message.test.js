@@ -10,10 +10,15 @@ test('parses a prefixed command and its arguments', () => {
   });
 });
 
-test('ignores ordinary text and empty commands', () => {
+test('supports custom prefixes and ignores ordinary or empty commands', () => {
   assert.equal(parseCommand('hello', '.'), null);
   assert.equal(parseCommand('.', '.'), null);
   assert.equal(parseCommand('.bad! command', '.'), null);
+  assert.deepEqual(parseCommand('!ping test', '!'), {
+    name: 'ping',
+    args: ['test'],
+    argumentText: 'test',
+  });
 });
 
 test('normalizes a direct text message', () => {
@@ -35,9 +40,7 @@ test('reads text from extended messages and group participants', () => {
       participant: '123@s.whatsapp.net',
       id: 'XYZ',
     },
-    message: {
-      extendedTextMessage: { text: '.menu' },
-    },
+    message: { extendedTextMessage: { text: '.menu' } },
   });
 
   assert.equal(message.text, '.menu');
@@ -50,25 +53,43 @@ test('ignores malformed messages', () => {
   assert.equal(normalizeMessage({ key: {}, message: {} }), null);
 });
 
-
-test('extracts captions from image messages', () => {
-  const message = normalizeMessage({
-    key: { remoteJid: '123@s.whatsapp.net', id: 'IMG' },
-    message: { imageMessage: { caption: '.ping' } },
-  });
-
-  assert.equal(message.text, '.ping');
+test('extracts captions from image and video messages', () => {
+  for (const field of ['imageMessage', 'videoMessage', 'documentMessage']) {
+    const message = normalizeMessage({
+      key: { remoteJid: '123@s.whatsapp.net', id: field },
+      message: { [field]: { caption: '.ping' } },
+    });
+    assert.equal(message.text, '.ping');
+  }
 });
 
-test('unwraps ephemeral messages before reading text', () => {
+test('unwraps ephemeral and view-once messages', () => {
   const message = normalizeMessage({
     key: { remoteJid: '123@s.whatsapp.net', id: 'EPH' },
     message: {
       ephemeralMessage: {
-        message: { conversation: '.menu' },
+        message: {
+          viewOnceMessage: { message: { conversation: '.menu' } },
+        },
       },
     },
   });
 
   assert.equal(message.text, '.menu');
+});
+
+test('extracts text from interactive reply message variants', () => {
+  const cases = [
+    [{ buttonsResponseMessage: { selectedButtonId: '.ping' } }, '.ping'],
+    [{ listResponseMessage: { title: 'Title', singleSelectReply: { selectedRowId: '.menu' } } }, '.menu'],
+    [{ templateButtonReplyMessage: { selectedId: '.info' } }, '.info'],
+    [{ interactiveResponseMessage: { nativeFlowResponseMessage: { paramsJson: '{"id":".help"}' } } }, '.help'],
+  ];
+
+  for (const [message, expected] of cases) {
+    assert.equal(normalizeMessage({
+      key: { remoteJid: '123@s.whatsapp.net', id: 'BTN' },
+      message,
+    }).text, expected);
+  }
 });
