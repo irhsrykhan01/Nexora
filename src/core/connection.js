@@ -144,8 +144,7 @@ export class WhatsAppConnection {
 
       if (this.#stopped) return;
       this.#logger.info('Old WhatsApp session cleared. A fresh QR code will be generated.');
-      this.#ui?.setStatus('CONNECTING');
-      await this.#connect();
+      this.#scheduleReconnect();
       return;
     }
 
