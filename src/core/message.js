@@ -4,6 +4,9 @@ const TEXT_FIELDS = [
   'imageMessage',
   'videoMessage',
   'documentMessage',
+  'buttonsResponseMessage',
+  'listResponseMessage',
+  'templateButtonReplyMessage',
 ];
 
 function unwrapMessage(message) {
@@ -14,6 +17,7 @@ function unwrapMessage(message) {
       current.ephemeralMessage?.message ??
       current.viewOnceMessage?.message ??
       current.viewOnceMessageV2?.message ??
+      current.viewOnceMessageV2Extension?.message ??
       current.documentWithCaptionMessage?.message;
 
     if (!wrapper) break;
@@ -26,17 +30,24 @@ function unwrapMessage(message) {
 function extractText(message) {
   for (const field of TEXT_FIELDS) {
     const value = message?.[field];
+    if (typeof value === 'string') return value;
 
-    if (field === 'conversation' && typeof value === 'string') {
-      return value;
-    }
+    if (value && typeof value.text === 'string') return value.text;
+    if (value && typeof value.caption === 'string') return value.caption;
+    if (value && typeof value.selectedDisplayText === 'string') return value.selectedDisplayText;
+    if (value && typeof value.selectedButtonId === 'string') return value.selectedButtonId;
+    if (value && typeof value.selectedRowId === 'string') return value.selectedRowId;
+    if (value && typeof value.selectedId === 'string') return value.selectedId;
+  }
 
-    if (value && typeof value.caption === 'string') {
-      return value.caption;
-    }
-
-    if (value && typeof value.text === 'string') {
-      return value.text;
+  const nativeFlow = message?.interactiveResponseMessage?.nativeFlowResponseMessage;
+  if (typeof nativeFlow?.paramsJson === 'string') {
+    try {
+      const parsed = JSON.parse(nativeFlow.paramsJson);
+      if (typeof parsed.id === 'string') return parsed.id;
+      if (typeof parsed.selectedId === 'string') return parsed.selectedId;
+    } catch {
+      return '';
     }
   }
 
@@ -63,12 +74,14 @@ export function normalizeMessage(upsertMessage) {
     isGroup: remoteJid.endsWith('@g.us'),
     isFromMe: Boolean(key.fromMe),
     text: extractText(message).trim(),
+    timestamp: upsertMessage.messageTimestamp ?? null,
     message: upsertMessage.message,
   };
 }
 
 export function parseCommand(text, prefix) {
-  if (typeof text !== 'string' || !text.startsWith(prefix)) return null;
+  if (typeof text !== 'string' || typeof prefix !== 'string' || !prefix) return null;
+  if (!text.startsWith(prefix)) return null;
 
   const body = text.slice(prefix.length).trim();
   if (!body) return null;
