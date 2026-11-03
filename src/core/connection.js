@@ -93,9 +93,7 @@ export class WhatsAppConnection {
   #handleConnectionUpdate(update, socket) {
     const { connection, lastDisconnect, qr } = update;
 
-    if (connection === 'connecting') {
-      this.#ui?.setStatus('CONNECTING');
-    }
+    if (connection === 'connecting') this.#ui?.setStatus('CONNECTING');
 
     if (qr) {
       this.#ui?.setStatus('WAITING FOR QR');
@@ -112,9 +110,9 @@ export class WhatsAppConnection {
     }
 
     if (connection !== 'close') return;
+    if (this.#socket !== socket) return;
 
-    if (this.#socket === socket) this.#socket = null;
-
+    this.#socket = null;
     const statusCode = lastDisconnect?.error?.output?.statusCode;
     const loggedOut = statusCode === DisconnectReason.loggedOut;
 
@@ -141,7 +139,6 @@ export class WhatsAppConnection {
 
     const delay = this.#reconnectDelay;
     this.#reconnectDelay = Math.min(this.#reconnectDelay * 2, MAX_RECONNECT_DELAY);
-
     this.#logger.info({ delay }, 'Scheduling WhatsApp reconnect');
 
     this.#reconnectTimer = setTimeout(() => {
