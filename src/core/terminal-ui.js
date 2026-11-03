@@ -22,7 +22,7 @@ function formatDuration(milliseconds) {
   const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
   const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
   const remainder = String(seconds % 60).padStart(2, '0');
-  return hours + ':' + minutes + ':' + remainder;
+  return [hours, minutes, remainder].join(':');
 }
 
 export class TerminalUI {
@@ -35,6 +35,7 @@ export class TerminalUI {
   #logs = [];
   #paused = false;
   #timer = null;
+  #pending = '';
 
   constructor({ botName = 'Nexora' } = {}) {
     this.#botName = botName;
@@ -52,9 +53,7 @@ export class TerminalUI {
   stop() {
     clearInterval(this.#timer);
     this.#timer = null;
-    if (this.#isTTY) {
-      process.stdout.write('\x1b[?25h\n');
-    }
+    if (this.#isTTY) process.stdout.write('\x1b[?25h\n');
   }
 
   setStatus(status) {
@@ -74,10 +73,9 @@ export class TerminalUI {
 
   pause() {
     this.#paused = true;
-    if (this.#isTTY) {
-      process.stdout.write('\x1b[2J\x1b[H');
-      process.stdout.write('NEXORA · WHATSAPP LINK\n\n');
-    }
+    if (!this.#isTTY) return;
+    process.stdout.write('\x1b[2J\x1b[H');
+    process.stdout.write('NEXORA · WHATSAPP LINK\n\n');
   }
 
   resume() {
@@ -89,8 +87,22 @@ export class TerminalUI {
     return new Writable({
       write: (chunk, _encoding, callback) => {
         try {
-          const entry = JSON.parse(chunk.toString());
-          this.#addLog(entry);
+          this.#pending += chunk.toString();
+          const lines = this.#pending.split('\n');
+          this.#pending = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (line.trim()) this.#addLog(JSON.parse(line));
+          }
+          callback();
+        } catch (error) {
+          callback(error);
+        }
+      },
+      final: (callback) => {
+        try {
+          if (this.#pending.trim()) this.#addLog(JSON.parse(this.#pending));
+          this.#pending = '';
           callback();
         } catch (error) {
           callback(error);
@@ -116,8 +128,7 @@ export class TerminalUI {
   }
 
   #paint(color, value) {
-    if (!this.#isTTY) return value;
-    return ANSI[color] + value + ANSI.reset;
+    return this.#isTTY ? ANSI[color] + value + ANSI.reset : value;
   }
 
   render() {
@@ -126,18 +137,15 @@ export class TerminalUI {
     const width = Math.min(Math.max((process.stdout.columns || 42) - 2, 36), 58);
     const contentWidth = width - 4;
     const clip = (value) => {
-      const text = String(value);
-      return text.length > contentWidth
-        ? text.slice(0, contentWidth - 1) + '…'
-        : text;
+      const clean = String(value).replace(/\x1b\[[0-9;]*m/g, '');
+      return clean.length > contentWidth ? clean.slice(0, contentWidth - 1) + '…' : value;
     };
     const line = (value = '') => '| ' + clip(value).padEnd(contentWidth) + ' |';
     const border = '+' + '-'.repeat(width - 2) + '+';
     const statusColor = this.#status === 'CONNECTED' ? 'green'
-      : this.#status === 'DISCONNECTED' || this.#status === 'LOGGED OUT' ? 'red'
+      : ['DISCONNECTED', 'LOGGED OUT'].includes(this.#status) ? 'red'
         : 'yellow';
     const status = this.#paint(statusColor, '● ' + this.#status);
-    const elapsed = formatDuration(Date.now() - this.#startedAt);
     const logLines = this.#logs.length
       ? this.#logs.map(({ level, message }) => {
           const color = level === 'ERROR' || level === 'FATAL' ? 'red'
@@ -154,7 +162,7 @@ export class TerminalUI {
       border,
       line('Bot       ' + this.#botName),
       line('WhatsApp  ' + status),
-      line('Uptime    ' + elapsed),
+      line('Uptime    ' + formatDuration(Date.now() - this.#startedAt)),
       line('Messages  ' + this.#messages),
       line('Commands  ' + this.#commands),
       border,
