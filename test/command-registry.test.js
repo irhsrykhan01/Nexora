@@ -80,7 +80,7 @@ test('registers the complete initial built-in command set', async () => {
   assert.equal(registry.size, 21);
   for (const name of [
     'info', 'menu', 'ping', 'uptime', 'calc', 'roll', 'coinflip',
-    'choose', '8ball', 'speed', 'trivia', 'tebakangka', 'susunkata',
+    'choose', '8ball', 'memory', 'trivia', 'tebakangka', 'susunkata',
     'stopgame', 'groupinfo', 'admins', 'grouplink', 'groupname',
     'groupdesc', 'setwelcome', 'setgoodbye',
   ]) {
