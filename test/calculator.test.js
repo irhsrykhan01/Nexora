@@ -11,6 +11,7 @@ test('calculates basic arithmetic and respects operator precedence', () => {
 test('supports decimals, unary signs, and right-associative powers', () => {
   assert.equal(calculateExpression('-2 + 4.5'), 2.5);
   assert.equal(calculateExpression('2 ^ 3 ^ 2'), 512);
+  assert.equal(calculateExpression(' 2 + 3  '), 5);
 });
 
 test('rejects empty, malformed, and unsupported expressions', () => {
