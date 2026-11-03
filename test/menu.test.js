@@ -28,7 +28,7 @@ test('shows detailed help for a command and its aliases', async () => {
   });
 
   assert.match(sent[0].text, /calc 2 \+ 2/);
-  assert.match(sent[0].text, /Alias: \.hitung/);
+  assert.ok(sent[0].text.includes('*Alias:* .hitung'));
 });
 
 test('reports unknown commands in detailed help mode', async () => {
