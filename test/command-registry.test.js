@@ -77,12 +77,13 @@ test('registers the complete initial built-in command set', async () => {
   const registry = createCommandRegistry();
   const names = registry.list().map((command) => command.name);
 
-  assert.equal(registry.size, 21);
+  assert.equal(registry.size, 28);
   for (const name of [
     'info', 'menu', 'ping', 'uptime', 'calc', 'roll', 'coinflip',
     'choose', '8ball', 'memory', 'trivia', 'tebakangka', 'susunkata',
     'stopgame', 'groupinfo', 'admins', 'grouplink', 'groupname',
-    'groupdesc', 'setwelcome', 'setgoodbye',
+    'groupdesc', 'setwelcome', 'setgoodbye', 'kick', 'add', 'promote',
+    'demote', 'groupopen', 'groupclose', 'resetgrouplink',
   ]) {
     assert.ok(names.includes(name), 'missing command: ' + name);
   }
