@@ -1,0 +1,21 @@
+{
+  "name": "nexora",
+  "version": "0.1.0",
+  "private": false,
+  "description": "An independent, modular WhatsApp automation bot built with Node.js and Baileys.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test",
+    "check": "node --check src/index.js && node --test"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
