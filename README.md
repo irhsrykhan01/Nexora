@@ -52,7 +52,9 @@ Do not use a global "allow all scripts" option.
 3. Keep the `data/auth` directory private. It contains WhatsApp credentials.
 4. Keep the process running while you want the bot online.
 
-Never upload the auth directory, QR codes, or pairing codes to GitHub or share them with anyone. If a session is exposed, unlink the device in WhatsApp and pair again.
+If you unlink Nexora from WhatsApp → Linked devices, Nexora detects the logged-out session, clears only the old `AUTH_DIR`, and automatically requests a fresh QR code. Your group settings file is preserved. Scan the new QR code from WhatsApp → Linked devices. You do not need to reinstall the bot or delete the whole `data` directory.
+
+Never upload the auth directory, QR codes, or pairing codes to GitHub or share them with anyone.
 
 ## Terminal dashboard
 
@@ -97,12 +99,19 @@ Only one game session can run in each chat at a time. Game sessions expire autom
 | `.groupinfo` | Show group name, member count, admins, and description |
 | `.admins` | Mention group admins |
 | `.grouplink` | Get the invite link (group admin and bot admin required) |
+| `.resetgrouplink` | Revoke the old invite link and create a new one |
 | `.groupname new name` | Change group name (group admin and bot admin required) |
 | `.groupdesc new description` | Change group description (group admin and bot admin required) |
+| `.kick @member` | Remove mentioned or quoted member |
+| `.add 6281234567890` | Invite a member by phone number |
+| `.promote @member` | Promote a member to admin |
+| `.demote @member` | Remove a member's admin role |
+| `.groupopen` | Allow all members to send messages |
+| `.groupclose` | Restrict messages to group admins |
 | `.setwelcome on/off` | Toggle welcome messages (group admins only) |
 | `.setgoodbye on/off` | Toggle goodbye messages (group admins only) |
 
-Group administration commands validate the sender's admin role. Editing group details and retrieving invite links also require Nexora to be a group admin. Nexora does not include mass-kick, mass-message, or unsolicited bulk-messaging commands.
+Group administration commands validate the sender's admin role. Actions that change group membership or settings also require Nexora to be a group admin. Mention a member or reply to their message for `.kick`, `.promote`, and `.demote`. The `.add` command accepts 8–15 digit phone numbers and WhatsApp may still reject an invite due to the target's privacy settings. Nexora does not include mass-kick, mass-message, or unsolicited bulk-messaging commands.
 
 ## Configuration
 
