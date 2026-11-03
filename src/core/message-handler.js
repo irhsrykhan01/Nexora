@@ -76,6 +76,14 @@ export function createMessageHandler({
           if (currentTime - timestamp > cooldownMs * 4) lastExecution.delete(key);
         }
       }
+      if (lastExecution.size > 5_000) {
+        const keys = lastExecution.keys();
+        for (let index = 0; index < 1_000; index += 1) {
+          const next = keys.next();
+          if (next.done) break;
+          lastExecution.delete(next.value);
+        }
+      }
 
       ui?.incrementCommand();
 
