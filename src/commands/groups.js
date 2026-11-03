@@ -1,5 +1,6 @@
 import {
   getGroupMetadata,
+  normalizeJid,
   requireBotAdmin,
 } from '../core/group-permissions.js';
 
@@ -7,6 +8,36 @@ function adminParticipants(metadata) {
   return (metadata.participants ?? []).filter((participant) =>
     participant.admin === 'admin' || participant.admin === 'superadmin'
   );
+}
+
+function getMentionedTargets(message) {
+  const content = message?.message ?? {};
+  const extended = content.extendedTextMessage?.contextInfo
+    ?? content.imageMessage?.contextInfo
+    ?? content.videoMessage?.contextInfo
+    ?? content.documentMessage?.contextInfo;
+  const mentioned = Array.isArray(extended?.mentionedJid) ? extended.mentionedJid : [];
+  const quoted = extended?.participant ? [extended.participant] : [];
+  return [...new Set([...mentioned, ...quoted].filter((jid) => typeof jid === 'string'))];
+}
+
+function getPhoneTargets(argumentText) {
+  const numbers = (argumentText || '').split(/[\s,]+/).filter(Boolean);
+  if (!numbers.length || numbers.length > 10) return [];
+  if (!numbers.every((number) => /^\+?\d{8,15}$/.test(number))) return [];
+  return numbers.map((number) => number.replace(/^\+/, '') + '@s.whatsapp.net');
+}
+
+function assertSafeTargets(sock, chat, targets) {
+  if (!targets.length) throw new Error('Tag anggota atau balas pesannya terlebih dahulu.');
+  const botJid = normalizeJid(sock.user?.id);
+  if (targets.some((jid) => normalizeJid(jid) === botJid)) {
+    throw new Error('Nexora tidak boleh menjadi target perintah ini.');
+  }
+  if (targets.some((jid) => !jid.endsWith('@s.whatsapp.net'))) {
+    throw new Error('Target anggota tidak valid.');
+  }
+  return [...new Set(targets.map(normalizeJid))];
 }
 
 export function createGroupCommands({ store = null } = {}) {
@@ -76,6 +107,22 @@ export function createGroupCommands({ store = null } = {}) {
       },
     },
     {
+      name: 'resetgrouplink',
+      aliases: ['revokeinvite'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Reset tautan undangan grup yang lama.',
+      usage: 'resetgrouplink',
+      async execute({ sock, chat }) {
+        await requireBotAdmin(sock, chat);
+        const code = await sock.groupRevokeInvite(chat);
+        await sock.sendMessage(chat, {
+          text: '🔄 Tautan undangan lama sudah dinonaktifkan.\nhttps://chat.whatsapp.com/' + code,
+        });
+      },
+    },
+    {
       name: 'groupname',
       aliases: ['setname'],
       category: 'group',
@@ -111,6 +158,101 @@ export function createGroupCommands({ store = null } = {}) {
         await requireBotAdmin(sock, chat);
         await sock.groupUpdateDescription(chat, description);
         await sock.sendMessage(chat, { text: '✅ Deskripsi grup berhasil diperbarui.' });
+      },
+    },
+    {
+      name: 'kick',
+      aliases: ['remove', 'keluarkan'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Keluarkan anggota yang ditandai atau dikutip.',
+      usage: 'kick @anggota',
+      async execute({ sock, chat, message }) {
+        await requireBotAdmin(sock, chat);
+        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        await sock.groupParticipantsUpdate(chat, targets, 'remove');
+        await sock.sendMessage(chat, { text: '✅ Permintaan mengeluarkan anggota sudah dikirim.' });
+      },
+    },
+    {
+      name: 'add',
+      aliases: ['invite', 'tambahanggota'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Undang anggota menggunakan nomor telepon.',
+      usage: 'add 6281234567890',
+      async execute({ sock, chat, argumentText }) {
+        await requireBotAdmin(sock, chat);
+        const targets = assertSafeTargets(sock, chat, getPhoneTargets(argumentText));
+        const result = await sock.groupParticipantsUpdate(chat, targets, 'add');
+        const failed = Array.isArray(result)
+          ? result.filter((item) => item.status && item.status !== '200').length
+          : 0;
+        await sock.sendMessage(chat, {
+          text: failed
+            ? '⚠️ Undangan diproses, tetapi ada ' + failed + ' nomor yang tidak berhasil ditambahkan.'
+            : '✅ Permintaan undangan anggota sudah dikirim. Hasil akhir bergantung pada pengaturan privasi WhatsApp.',
+        });
+      },
+    },
+    {
+      name: 'promote',
+      aliases: ['angkatadmin'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Jadikan anggota sebagai admin grup.',
+      usage: 'promote @anggota',
+      async execute({ sock, chat, message }) {
+        await requireBotAdmin(sock, chat);
+        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        await sock.groupParticipantsUpdate(chat, targets, 'promote');
+        await sock.sendMessage(chat, { text: '✅ Permintaan menjadikan admin sudah dikirim.' });
+      },
+    },
+    {
+      name: 'demote',
+      aliases: ['turunkanadmin'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Cabut status admin anggota.',
+      usage: 'demote @anggota',
+      async execute({ sock, chat, message }) {
+        await requireBotAdmin(sock, chat);
+        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        await sock.groupParticipantsUpdate(chat, targets, 'demote');
+        await sock.sendMessage(chat, { text: '✅ Permintaan mencabut admin sudah dikirim.' });
+      },
+    },
+    {
+      name: 'groupopen',
+      aliases: ['bukagrup'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Izinkan semua anggota mengirim pesan.',
+      usage: 'groupopen',
+      async execute({ sock, chat }) {
+        await requireBotAdmin(sock, chat);
+        await sock.groupSettingUpdate(chat, 'not_announcement');
+        await sock.sendMessage(chat, { text: '🔓 Grup dibuka. Semua anggota dapat mengirim pesan.' });
+      },
+    },
+    {
+      name: 'groupclose',
+      aliases: ['tutupgrup'],
+      category: 'group',
+      groupOnly: true,
+      adminOnly: true,
+      description: 'Batasi pengiriman pesan hanya untuk admin.',
+      usage: 'groupclose',
+      async execute({ sock, chat }) {
+        await requireBotAdmin(sock, chat);
+        await sock.groupSettingUpdate(chat, 'announcement');
+        await sock.sendMessage(chat, { text: '🔒 Grup ditutup. Hanya admin yang dapat mengirim pesan.' });
       },
     },
     {
