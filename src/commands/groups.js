@@ -170,7 +170,12 @@ export function createGroupCommands({ store = null } = {}) {
       usage: 'kick @anggota',
       async execute({ sock, chat, message }) {
         await requireBotAdmin(sock, chat);
-        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        const mentioned = getMentionedTargets(message);
+        if (!mentioned.length) {
+          await sock.sendMessage(chat, { text: 'Tag anggota yang ingin dikeluarkan atau balas pesannya dengan .kick.' });
+          return;
+        }
+        const targets = assertSafeTargets(sock, chat, mentioned);
         await sock.groupParticipantsUpdate(chat, targets, 'remove');
         await sock.sendMessage(chat, { text: '✅ Permintaan mengeluarkan anggota sudah dikirim.' });
       },
@@ -185,7 +190,12 @@ export function createGroupCommands({ store = null } = {}) {
       usage: 'add 6281234567890',
       async execute({ sock, chat, argumentText }) {
         await requireBotAdmin(sock, chat);
-        const targets = assertSafeTargets(sock, chat, getPhoneTargets(argumentText));
+        const phoneTargets = getPhoneTargets(argumentText);
+        if (!phoneTargets.length) {
+          await sock.sendMessage(chat, { text: 'Format: .add 6281234567890 (maksimal 10 nomor, 8–15 digit).' });
+          return;
+        }
+        const targets = assertSafeTargets(sock, chat, phoneTargets);
         const result = await sock.groupParticipantsUpdate(chat, targets, 'add');
         const failed = Array.isArray(result)
           ? result.filter((item) => item.status && item.status !== '200').length
@@ -207,7 +217,12 @@ export function createGroupCommands({ store = null } = {}) {
       usage: 'promote @anggota',
       async execute({ sock, chat, message }) {
         await requireBotAdmin(sock, chat);
-        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        const mentioned = getMentionedTargets(message);
+        if (!mentioned.length) {
+          await sock.sendMessage(chat, { text: 'Tag anggota yang ingin dijadikan admin atau balas pesannya dengan .promote.' });
+          return;
+        }
+        const targets = assertSafeTargets(sock, chat, mentioned);
         await sock.groupParticipantsUpdate(chat, targets, 'promote');
         await sock.sendMessage(chat, { text: '✅ Permintaan menjadikan admin sudah dikirim.' });
       },
@@ -222,7 +237,12 @@ export function createGroupCommands({ store = null } = {}) {
       usage: 'demote @anggota',
       async execute({ sock, chat, message }) {
         await requireBotAdmin(sock, chat);
-        const targets = assertSafeTargets(sock, chat, getMentionedTargets(message));
+        const mentioned = getMentionedTargets(message);
+        if (!mentioned.length) {
+          await sock.sendMessage(chat, { text: 'Tag admin yang ingin diturunkan atau balas pesannya dengan .demote.' });
+          return;
+        }
+        const targets = assertSafeTargets(sock, chat, mentioned);
         await sock.groupParticipantsUpdate(chat, targets, 'demote');
         await sock.sendMessage(chat, { text: '✅ Permintaan mencabut admin sudah dikirim.' });
       },
