@@ -12,16 +12,18 @@ export class WhatsAppConnection {
   #logger;
   #ui;
   #onMessages;
+  #onParticipantsUpdate;
   #socket = null;
   #stopped = false;
   #reconnectTimer = null;
   #reconnectDelay = MIN_RECONNECT_DELAY;
   #starting = false;
 
-  constructor({ logger, ui, onMessages }) {
+  constructor({ logger, ui, onMessages, onParticipantsUpdate }) {
     this.#logger = logger;
     this.#ui = ui;
     this.#onMessages = onMessages;
+    this.#onParticipantsUpdate = onParticipantsUpdate;
   }
 
   async start() {
@@ -69,9 +71,13 @@ export class WhatsAppConnection {
       this.#socket = socket;
       socket.ev.on('creds.update', saveCreds);
       socket.ev.on('messages.upsert', (update) => {
-        this.#onMessages.call(socket, update);
+        void this.#onMessages.call(socket, update);
       });
-
+      socket.ev.on('group-participants.update', (update) => {
+        if (this.#onParticipantsUpdate) {
+          void this.#onParticipantsUpdate(update, socket);
+        }
+      });
       socket.ev.on('connection.update', (update) => {
         this.#handleConnectionUpdate(update, socket);
       });
@@ -143,5 +149,6 @@ export class WhatsAppConnection {
       this.#ui?.setStatus('CONNECTING');
       void this.#connect();
     }, delay);
+    this.#reconnectTimer.unref?.();
   }
 }
