@@ -12,7 +12,11 @@ export class CommandRegistry {
     }
 
     if (typeof command.execute !== 'function') {
-      throw new TypeError(`Command "${name}" must provide an execute function.`);
+      throw new TypeError('Command "' + name + '" must provide an execute function.');
+    }
+
+    if (command.aliases !== undefined && !Array.isArray(command.aliases)) {
+      throw new TypeError('Command aliases must be an array.');
     }
 
     const aliases = (command.aliases ?? []).map((alias) =>
@@ -20,25 +24,32 @@ export class CommandRegistry {
     );
     const names = [name, ...aliases];
     if (new Set(names).size !== names.length) {
-      throw new Error(`Command "${name}" contains duplicate names or aliases.`);
+      throw new Error('Command "' + name + '" contains duplicate names or aliases.');
     }
 
     for (const item of names) {
       if (!/^[a-z0-9_-]+$/.test(item)) {
-        throw new TypeError(`Invalid alias "${item}" for command "${name}".`);
+        throw new TypeError('Invalid alias "' + item + '" for command "' + name + '".');
       }
       if (this.#commands.has(item)) {
-        throw new Error(`Command or alias "${item}" is already registered.`);
+        throw new Error('Command or alias "' + item + '" is already registered.');
       }
     }
 
     const normalized = Object.freeze({
       name,
       aliases: Object.freeze(aliases),
-      description: command.description ?? 'No description provided.',
-      usage: command.usage ?? name,
+      description: String(command.description ?? 'No description provided.'),
+      usage: String(command.usage ?? name),
+      category: String(command.category ?? 'general'),
+      groupOnly: command.groupOnly === true,
+      adminOnly: command.adminOnly === true,
       execute: command.execute,
     });
+
+    if (normalized.adminOnly && !normalized.groupOnly) {
+      throw new TypeError('Admin-only commands must also be group-only.');
+    }
 
     for (const item of names) this.#commands.set(item, normalized);
     return normalized;
@@ -50,7 +61,7 @@ export class CommandRegistry {
 
   list() {
     return [...new Set(this.#commands.values())].sort((a, b) =>
-      a.name.localeCompare(b.name)
+      a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
     );
   }
 
