@@ -13,7 +13,7 @@ test('parses a prefixed command and its arguments', () => {
 test('ignores ordinary text and empty commands', () => {
   assert.equal(parseCommand('hello', '.'), null);
   assert.equal(parseCommand('.', '.'), null);
-  assert.equal(parseCommand('.bad command!', '.'), null);
+  assert.equal(parseCommand('.bad! command', '.'), null);
 });
 
 test('normalizes a direct text message', () => {
@@ -48,4 +48,27 @@ test('reads text from extended messages and group participants', () => {
 test('ignores malformed messages', () => {
   assert.equal(normalizeMessage(null), null);
   assert.equal(normalizeMessage({ key: {}, message: {} }), null);
+});
+
+
+test('extracts captions from image messages', () => {
+  const message = normalizeMessage({
+    key: { remoteJid: '123@s.whatsapp.net', id: 'IMG' },
+    message: { imageMessage: { caption: '.ping' } },
+  });
+
+  assert.equal(message.text, '.ping');
+});
+
+test('unwraps ephemeral messages before reading text', () => {
+  const message = normalizeMessage({
+    key: { remoteJid: '123@s.whatsapp.net', id: 'EPH' },
+    message: {
+      ephemeralMessage: {
+        message: { conversation: '.menu' },
+      },
+    },
+  });
+
+  assert.equal(message.text, '.menu');
 });
