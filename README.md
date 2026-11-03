@@ -23,6 +23,28 @@ npm start
 
 On Android/Termux, install Node.js and Git first. On a Pterodactyl panel, use a supported Node.js runtime and run the same install and start commands.
 
+
+### npm 12 install-script approval
+
+Recent npm versions may block dependency install scripts until they are explicitly approved. Nexora's reviewed runtime scripts are limited to:
+- Baileys: checks that Node.js 20 or newer is installed.
+- protobufjs: checks dependent version compatibility and prints a warning if needed.
+
+When npm reports these scripts as blocked, inspect the list first:
+
+```bash
+npm install-scripts ls
+```
+
+Then approve only those exact packages:
+
+```bash
+npm install-scripts approve @whiskeysockets/baileys
+npm install-scripts approve protobufjs
+```
+
+Do not use a global "allow all scripts" option.
+
 ## First connection
 
 1. Start Nexora with `npm start`.
@@ -45,7 +67,7 @@ Use the configured prefix (default `.`).
 | Command | Description |
 | --- | --- |
 | `.ping` / `.p` | Check whether Nexora responds |
-| `.menu` / `.help` / `.allmenu` | List available commands by category |
+| `.menu` / `.help` / `.allmenu` | List commands; add a name for detailed usage, e.g. `.help calc` |
 | `.info` | Show bot and runtime information |
 | `.uptime` | Show how long Nexora has been running |
 | `.memory` / `.mem` | Show memory usage of the bot process |
