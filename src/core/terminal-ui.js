@@ -90,7 +90,6 @@ export class TerminalUI {
           this.#pending += chunk.toString();
           const lines = this.#pending.split('\n');
           this.#pending = lines.pop() ?? '';
-
           for (const line of lines) {
             if (line.trim()) this.#addLog(JSON.parse(line));
           }
@@ -136,11 +135,14 @@ export class TerminalUI {
 
     const width = Math.min(Math.max((process.stdout.columns || 42) - 2, 36), 58);
     const contentWidth = width - 4;
-    const clip = (value) => {
-      const clean = String(value).replace(/\x1b\[[0-9;]*m/g, '');
-      return clean.length > contentWidth ? clean.slice(0, contentWidth - 1) + '…' : value;
+    const line = (value = '') => {
+      const raw = String(value);
+      const plain = raw.replace(/\x1b\[[0-9;]*m/g, '');
+      if (plain.length > contentWidth) {
+        return '| ' + plain.slice(0, contentWidth - 1) + '… |';
+      }
+      return '| ' + raw + ' '.repeat(contentWidth - plain.length) + ' |';
     };
-    const line = (value = '') => '| ' + clip(value).padEnd(contentWidth) + ' |';
     const border = '+' + '-'.repeat(width - 2) + '+';
     const statusColor = this.#status === 'CONNECTED' ? 'green'
       : ['DISCONNECTED', 'LOGGED OUT'].includes(this.#status) ? 'red'
@@ -163,7 +165,7 @@ export class TerminalUI {
       line('Bot       ' + this.#botName),
       line('WhatsApp  ' + status),
       line('Uptime    ' + formatDuration(Date.now() - this.#startedAt)),
-      line('Messages  ' + this.#messages),
+      line('Text msgs ' + this.#messages),
       line('Commands  ' + this.#commands),
       border,
       line(this.#paint('bold', 'ACTIVITY')),
