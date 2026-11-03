@@ -41,7 +41,9 @@ export function createGroupCommands({ store = null } = {}) {
       usage: 'admins',
       async execute({ sock, chat }) {
         const metadata = await getGroupMetadata(sock, chat);
-        const admins = adminParticipants(metadata);
+        const admins = adminParticipants(metadata).filter((participant) =>
+          typeof participant.id === 'string'
+        );
         if (admins.length === 0) {
           await sock.sendMessage(chat, { text: 'Belum ada data admin grup.' });
           return;
@@ -66,6 +68,7 @@ export function createGroupCommands({ store = null } = {}) {
       description: 'Ambil tautan undangan grup.',
       usage: 'grouplink',
       async execute({ sock, chat }) {
+        await requireBotAdmin(sock, chat);
         const code = await sock.groupInviteCode(chat);
         await sock.sendMessage(chat, {
           text: '🔗 Tautan undangan grup:\nhttps://chat.whatsapp.com/' + code,
