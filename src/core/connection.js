@@ -4,6 +4,7 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import { config } from '../config.js';
+import { clearWhatsAppAuthSession } from './auth-session.js';
 
 const MIN_RECONNECT_DELAY = 1_500;
 const MAX_RECONNECT_DELAY = 30_000;
@@ -18,6 +19,7 @@ export class WhatsAppConnection {
   #reconnectTimer = null;
   #reconnectDelay = MIN_RECONNECT_DELAY;
   #starting = false;
+  #resettingAuth = false;
 
   constructor({ logger, ui, onMessages, onParticipantsUpdate }) {
     this.#logger = logger;
@@ -52,7 +54,7 @@ export class WhatsAppConnection {
   }
 
   async #connect() {
-    if (this.#stopped || this.#starting) return;
+    if (this.#stopped || this.#starting || this.#resettingAuth) return;
     this.#starting = true;
 
     try {
@@ -82,7 +84,9 @@ export class WhatsAppConnection {
         });
       });
       socket.ev.on('connection.update', (update) => {
-        this.#handleConnectionUpdate(update, socket);
+        void this.#handleConnectionUpdate(update, socket).catch((error) => {
+          this.#logger.error({ err: error }, 'Connection update handler failed');
+        });
       });
     } catch (error) {
       this.#ui?.setStatus('DISCONNECTED');
@@ -93,7 +97,7 @@ export class WhatsAppConnection {
     }
   }
 
-  #handleConnectionUpdate(update, socket) {
+  async #handleConnectionUpdate(update, socket) {
     const { connection, lastDisconnect, qr } = update;
 
     if (connection === 'connecting') this.#ui?.setStatus('CONNECTING');
@@ -101,8 +105,9 @@ export class WhatsAppConnection {
     if (qr) {
       this.#ui?.setStatus('WAITING FOR QR');
       this.#ui?.pause();
-      process.stdout.write('Scan this QR code with WhatsApp > Linked devices:\n\n');
+      process.stdout.write('\nScan QR baru melalui WhatsApp > Perangkat tertaut:\n\n');
       qrcode.generate(qr, { small: true });
+      process.stdout.write('\nQR berlaku sementara. Jika kedaluwarsa, tunggu QR berikutnya.\n');
     }
 
     if (connection === 'open') {
@@ -120,10 +125,27 @@ export class WhatsAppConnection {
 
     if (loggedOut) {
       this.#ui?.resume();
-      this.#ui?.setStatus('LOGGED OUT');
-      this.#logger.error(
-        'WhatsApp session logged out. Remove the local auth directory and pair again.'
+      this.#ui?.setStatus('RESETTING SESSION');
+      this.#logger.warn(
+        'WhatsApp session was unlinked. Clearing only the old auth session and requesting a new QR code.'
       );
+
+      this.#resettingAuth = true;
+      try {
+        await clearWhatsAppAuthSession(config.authDir);
+        this.#reconnectDelay = MIN_RECONNECT_DELAY;
+      } catch (error) {
+        this.#ui?.setStatus('AUTH RESET FAILED');
+        this.#logger.error({ err: error }, 'Unable to clear the old WhatsApp auth session');
+        return;
+      } finally {
+        this.#resettingAuth = false;
+      }
+
+      if (this.#stopped) return;
+      this.#logger.info('Old WhatsApp session cleared. A fresh QR code will be generated.');
+      this.#ui?.setStatus('CONNECTING');
+      await this.#connect();
       return;
     }
 
