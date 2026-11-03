@@ -19,6 +19,9 @@ export class CommandRegistry {
       String(alias).trim().toLowerCase()
     );
     const names = [name, ...aliases];
+    if (new Set(names).size !== names.length) {
+      throw new Error(`Command "${name}" contains duplicate names or aliases.`);
+    }
 
     for (const item of names) {
       if (!/^[a-z0-9_-]+$/.test(item)) {
