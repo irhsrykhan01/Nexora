@@ -2,18 +2,21 @@ import { config } from '../config.js';
 
 export default {
   name: 'info',
-  description: 'Show basic information about this bot.',
+  category: 'general',
+  description: 'Tampilkan informasi dasar Nexora.',
   usage: 'info',
   async execute({ sock, chat, registry }) {
     const text = [
-      `* ${config.botName} *`,
-      'An independent WhatsApp automation project.',
+      '*' + config.botName + '*',
+      'Bot WhatsApp modular yang dikembangkan secara independen.',
       '',
-      `Commands: ${registry.size}`,
-      `Prefix: ${config.prefix}`,
-      `Node.js: ${process.version}`,
+      'Versi: 0.1.0',
+      'Command: ' + registry.size,
+      'Prefix: ' + config.prefix,
+      'Node.js: ' + process.version,
+      'Platform: ' + process.platform,
       '',
-      'Nexora is not affiliated with WhatsApp.',
+      'Nexora tidak berafiliasi dengan WhatsApp atau Meta.',
     ].join('\n');
 
     await sock.sendMessage(chat, { text });
