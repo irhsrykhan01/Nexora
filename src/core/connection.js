@@ -10,6 +10,7 @@ const MAX_RECONNECT_DELAY = 30_000;
 
 export class WhatsAppConnection {
   #logger;
+  #ui;
   #onMessages;
   #socket = null;
   #stopped = false;
@@ -17,13 +18,15 @@ export class WhatsAppConnection {
   #reconnectDelay = MIN_RECONNECT_DELAY;
   #starting = false;
 
-  constructor({ logger, onMessages }) {
+  constructor({ logger, ui, onMessages }) {
     this.#logger = logger;
+    this.#ui = ui;
     this.#onMessages = onMessages;
   }
 
   async start() {
     this.#stopped = false;
+    this.#ui?.setStatus('CONNECTING');
     await this.#connect();
   }
 
@@ -42,6 +45,8 @@ export class WhatsAppConnection {
         this.#logger.warn({ err: error }, 'Error while closing WhatsApp socket');
       }
     }
+
+    this.#ui?.setStatus('STOPPED');
   }
 
   async #connect() {
@@ -71,6 +76,7 @@ export class WhatsAppConnection {
         this.#handleConnectionUpdate(update, socket);
       });
     } catch (error) {
+      this.#ui?.setStatus('DISCONNECTED');
       this.#logger.error({ err: error }, 'Unable to initialize WhatsApp connection');
       this.#scheduleReconnect();
     } finally {
@@ -81,13 +87,21 @@ export class WhatsAppConnection {
   #handleConnectionUpdate(update, socket) {
     const { connection, lastDisconnect, qr } = update;
 
+    if (connection === 'connecting') {
+      this.#ui?.setStatus('CONNECTING');
+    }
+
     if (qr) {
-      this.#logger.info('Scan this QR code with WhatsApp > Linked devices:');
+      this.#ui?.setStatus('WAITING FOR QR');
+      this.#ui?.pause();
+      process.stdout.write('Scan this QR code with WhatsApp > Linked devices:\n\n');
       qrcode.generate(qr, { small: true });
     }
 
     if (connection === 'open') {
       this.#reconnectDelay = MIN_RECONNECT_DELAY;
+      this.#ui?.resume();
+      this.#ui?.setStatus('CONNECTED');
       this.#logger.info('WhatsApp connection established');
     }
 
@@ -99,12 +113,16 @@ export class WhatsAppConnection {
     const loggedOut = statusCode === DisconnectReason.loggedOut;
 
     if (loggedOut) {
+      this.#ui?.resume();
+      this.#ui?.setStatus('LOGGED OUT');
       this.#logger.error(
         'WhatsApp session logged out. Remove the local auth directory and pair again.'
       );
       return;
     }
 
+    this.#ui?.resume();
+    this.#ui?.setStatus('DISCONNECTED');
     this.#logger.warn(
       { statusCode },
       'WhatsApp connection closed; reconnecting'
@@ -122,8 +140,8 @@ export class WhatsAppConnection {
 
     this.#reconnectTimer = setTimeout(() => {
       this.#reconnectTimer = null;
+      this.#ui?.setStatus('CONNECTING');
       void this.#connect();
     }, delay);
-
   }
 }
