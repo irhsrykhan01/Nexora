@@ -71,12 +71,15 @@ export class WhatsAppConnection {
       this.#socket = socket;
       socket.ev.on('creds.update', saveCreds);
       socket.ev.on('messages.upsert', (update) => {
-        void this.#onMessages.call(socket, update);
+        void Promise.resolve(this.#onMessages.call(socket, update)).catch((error) => {
+          this.#logger.error({ err: error }, 'Incoming message handler failed');
+        });
       });
       socket.ev.on('group-participants.update', (update) => {
-        if (this.#onParticipantsUpdate) {
-          void this.#onParticipantsUpdate(update, socket);
-        }
+        if (!this.#onParticipantsUpdate) return;
+        void Promise.resolve(this.#onParticipantsUpdate(update, socket)).catch((error) => {
+          this.#logger.error({ err: error }, 'Group participant handler failed');
+        });
       });
       socket.ev.on('connection.update', (update) => {
         this.#handleConnectionUpdate(update, socket);
@@ -109,8 +112,7 @@ export class WhatsAppConnection {
       this.#logger.info('WhatsApp connection established');
     }
 
-    if (connection !== 'close') return;
-    if (this.#socket !== socket) return;
+    if (connection !== 'close' || this.#socket !== socket) return;
 
     this.#socket = null;
     const statusCode = lastDisconnect?.error?.output?.statusCode;
