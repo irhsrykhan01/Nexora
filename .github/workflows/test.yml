@@ -10,8 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24, 26]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -19,7 +20,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Run tests
+      - name: Check source and run automated tests
         run: npm run check
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
