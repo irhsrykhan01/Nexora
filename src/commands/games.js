@@ -43,7 +43,7 @@ export function createGameCommands({ gameManager } = {}) {
     },
     {
       name: 'stopgame',
-      aliases: ['akhiri game'],
+      aliases: ['endgame'],
       category: 'games',
       description: 'Hentikan permainan yang sedang berjalan.',
       usage: 'stopgame',
