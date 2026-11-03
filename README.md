@@ -48,8 +48,8 @@ Use the configured prefix (default `.`).
 | `.menu` / `.help` / `.allmenu` | List available commands by category |
 | `.info` | Show bot and runtime information |
 | `.uptime` | Show how long Nexora has been running |
+| `.memory` / `.mem` | Show memory usage of the bot process |
 | `.calc 12 * (3 + 2)` | Safely calculate arithmetic expressions |
-| `.speed` | Show a lightweight response check |
 
 The calculator supports parentheses, decimals, unary signs, addition, subtraction, multiplication, division, modulo, and powers. It does not execute JavaScript or use `eval`.
 
@@ -59,7 +59,7 @@ The calculator supports parentheses, decimals, unary signs, addition, subtractio
 | --- | --- |
 | `.roll 2d6` | Roll 1–20 dice with 2–1,000 sides |
 | `.coinflip` | Flip a virtual coin |
-| `.choose A | B | C` | Choose one of 2–10 options |
+| `.choose` | Choose one of 2–10 options separated by `|` |
 | `.8ball question` | Get a lighthearted random response |
 | `.trivia` | Start a general-knowledge quiz |
 | `.tebakangka` | Guess a number from 1 to 20 |
@@ -74,13 +74,13 @@ Only one game session can run in each chat at a time. Game sessions expire autom
 | --- | --- |
 | `.groupinfo` | Show group name, member count, admins, and description |
 | `.admins` | Mention group admins |
-| `.grouplink` | Get the group invite link (group admins only) |
+| `.grouplink` | Get the invite link (group admin and bot admin required) |
 | `.groupname new name` | Change group name (group admin and bot admin required) |
 | `.groupdesc new description` | Change group description (group admin and bot admin required) |
 | `.setwelcome on/off` | Toggle welcome messages (group admins only) |
 | `.setgoodbye on/off` | Toggle goodbye messages (group admins only) |
 
-Group administration commands validate the sender's admin role. Editing the group name or description also requires Nexora to be an admin. Nexora does not include mass-kick, mass-message, or unsolicited bulk-messaging commands.
+Group administration commands validate the sender's admin role. Editing group details and retrieving invite links also require Nexora to be a group admin. Nexora does not include mass-kick, mass-message, or unsolicited bulk-messaging commands.
 
 ## Configuration
 
