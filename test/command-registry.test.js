@@ -35,3 +35,16 @@ test('returns unique commands in sorted order', () => {
 
   assert.deepEqual(registry.list().map((command) => command.name), ['alpha', 'zeta']);
 });
+
+
+test('rejects duplicate aliases inside one command', () => {
+  const registry = new CommandRegistry();
+  assert.throws(
+    () => registry.register({
+      name: 'ping',
+      aliases: ['p', 'p'],
+      execute: async () => {},
+    }),
+    /duplicate/i
+  );
+});
