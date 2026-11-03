@@ -1,7 +1,7 @@
 import { normalizeMessage, parseCommand } from './message.js';
 import { config } from '../config.js';
 
-export function createMessageHandler({ registry, logger }) {
+export function createMessageHandler({ registry, logger, ui }) {
   return async function handleMessage(upsert) {
     if (upsert?.type !== 'notify' || !Array.isArray(upsert.messages)) return;
 
@@ -10,11 +10,15 @@ export function createMessageHandler({ registry, logger }) {
 
       if (!message || message.isFromMe || !message.text) continue;
 
+      ui?.incrementMessage();
+
       const parsed = parseCommand(message.text, config.prefix);
       if (!parsed) continue;
 
       const command = registry.get(parsed.name);
       if (!command) continue;
+
+      ui?.incrementCommand();
 
       try {
         await command.execute({
