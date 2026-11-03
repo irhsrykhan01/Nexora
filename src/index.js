@@ -1,13 +1,16 @@
 import { createCommandRegistry } from './commands/index.js';
 import { WhatsAppConnection } from './core/connection.js';
 import { createMessageHandler } from './core/message-handler.js';
-import { logger } from './core/logger.js';
+import { logger, ui } from './core/logger.js';
+
+ui.start();
 
 const registry = createCommandRegistry();
-const handleMessage = createMessageHandler({ registry, logger });
+const handleMessage = createMessageHandler({ registry, logger, ui });
 
 const connection = new WhatsAppConnection({
   logger,
+  ui,
   onMessages: handleMessage,
 });
 
@@ -19,6 +22,7 @@ async function shutdown(signal) {
 
   logger.info({ signal }, 'Shutting down Nexora');
   await connection.stop();
+  ui.stop();
   process.exitCode = 0;
 }
 
