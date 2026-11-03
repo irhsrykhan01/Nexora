@@ -48,3 +48,16 @@ test('rejects duplicate aliases inside one command', () => {
     /duplicate/i
   );
 });
+
+
+test('registers the initial built-in command set', async () => {
+  const { createCommandRegistry } = await import('../src/commands/index.js');
+  const registry = createCommandRegistry();
+
+  assert.deepEqual(
+    registry.list().map((command) => command.name),
+    ['info', 'menu', 'ping']
+  );
+  assert.equal(registry.get('help').name, 'menu');
+  assert.equal(registry.get('allmenu').name, 'menu');
+});
