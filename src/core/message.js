@@ -44,7 +44,9 @@ function extractText(message) {
 }
 
 export function normalizeMessage(upsertMessage) {
-  const key = upsertMessage?.key;
+  if (!upsertMessage || typeof upsertMessage !== 'object') return null;
+
+  const key = upsertMessage.key;
   const remoteJid = key?.remoteJid;
 
   if (!remoteJid || !upsertMessage.message) return null;
