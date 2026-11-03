@@ -125,6 +125,5 @@ export class WhatsAppConnection {
       void this.#connect();
     }, delay);
 
-    this.#reconnectTimer.unref?.();
   }
 }
