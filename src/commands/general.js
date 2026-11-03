@@ -1,5 +1,4 @@
 import { randomInt } from 'node:crypto';
-import { performance } from 'node:perf_hooks';
 import { calculateExpression } from '../core/calculator.js';
 
 function formatUptime(seconds) {
@@ -16,6 +15,10 @@ function formatUptime(seconds) {
   ].filter(Boolean).join(' ');
 }
 
+function formatMegabytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
 export function createGeneralCommands() {
   return [
     {
@@ -26,6 +29,25 @@ export function createGeneralCommands() {
       async execute({ sock, chat }) {
         await sock.sendMessage(chat, {
           text: '⏱️ Nexora aktif selama ' + formatUptime(process.uptime()) + '.',
+        });
+      },
+    },
+    {
+      name: 'memory',
+      aliases: ['mem'],
+      category: 'tools',
+      description: 'Lihat penggunaan memori proses Nexora.',
+      usage: 'memory',
+      async execute({ sock, chat }) {
+        const memory = process.memoryUsage();
+        await sock.sendMessage(chat, {
+          text: [
+            '💾 *PENGGUNAAN MEMORI*',
+            'RSS: ' + formatMegabytes(memory.rss),
+            'Heap terpakai: ' + formatMegabytes(memory.heapUsed),
+            'Total heap: ' + formatMegabytes(memory.heapTotal),
+            'External: ' + formatMegabytes(memory.external),
+          ].join('\n'),
         });
       },
     },
@@ -89,7 +111,7 @@ export function createGeneralCommands() {
       aliases: ['pilih'],
       category: 'fun',
       description: 'Pilih satu dari beberapa opsi.',
-      usage: 'choose nasi goreng | mie ayam | soto',
+      usage: 'choose opsi A | opsi B | opsi C',
       async execute({ sock, chat, argumentText }) {
         const options = (argumentText || '').split('|').map((item) => item.trim()).filter(Boolean);
         if (options.length < 2 || options.length > 10) {
@@ -120,18 +142,6 @@ export function createGeneralCommands() {
         ];
         await sock.sendMessage(chat, {
           text: '🎱 ' + answers[randomInt(0, answers.length)],
-        });
-      },
-    },
-    {
-      name: 'speed',
-      category: 'tools',
-      description: 'Ukur waktu respons internal Nexora.',
-      usage: 'speed',
-      async execute({ sock, chat }) {
-        const started = performance.now();
-        await sock.sendMessage(chat, {
-          text: '⚡ Nexora siap merespons (' + Math.round(performance.now() - started) + ' ms waktu proses).',
         });
       },
     },
