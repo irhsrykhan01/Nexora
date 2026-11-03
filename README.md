@@ -22,12 +22,15 @@ npm start
 
 On Android/Termux, install a supported Node.js version and Git first. On a Pterodactyl panel, use a Node.js 20 or newer runtime and run `npm install` followed by `npm start`.
 
+## Terminal dashboard
+
+When Nexora runs in an interactive terminal such as Termux, it displays a compact dashboard with WhatsApp connection status, uptime, incoming message and recognized command counters, and recent activity. The dashboard uses built-in Node.js functionality and does not add a UI dependency. When output is redirected or the terminal is non-interactive, logs are printed as readable text.
+
 ## First connection
 
 1. Start Nexora with `npm start`.
-2. A QR code will appear in the terminal.
-3. In WhatsApp, open **Linked devices** and scan the QR code.
-4. Keep the `data/auth` directory private. It contains account credentials.
+2. If a QR code appears, scan it from WhatsApp **Linked devices**.
+3. Keep the `data/auth` directory private. It contains account credentials.
 
 If the session is logged out, remove the local `data/auth` directory and pair the device again. Do not upload session files to GitHub or share them with anyone.
 
@@ -68,7 +71,7 @@ Tests use Node.js's built-in test runner and do not require API credentials.
 
 ## Project status
 
-This is the initial foundation release. The core connection, command registry, message parsing, basic commands, and automated tests are included. Media tools, group administration, games, and downloaders are not claimed as implemented yet.
+This is the initial foundation release. The core connection, terminal dashboard, command registry, message parsing, basic commands, and automated tests are included. Media tools, group administration, games, and downloaders are not claimed as implemented yet.
 
 ## Important notes
 
