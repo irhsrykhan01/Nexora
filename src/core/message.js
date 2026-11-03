@@ -38,6 +38,9 @@ function extractText(message) {
     if (value && typeof value.selectedButtonId === 'string') return value.selectedButtonId;
     if (value && typeof value.selectedRowId === 'string') return value.selectedRowId;
     if (value && typeof value.selectedId === 'string') return value.selectedId;
+    if (value && typeof value.singleSelectReply?.selectedRowId === 'string') {
+      return value.singleSelectReply.selectedRowId;
+    }
   }
 
   const nativeFlow = message?.interactiveResponseMessage?.nativeFlowResponseMessage;
@@ -59,7 +62,6 @@ export function normalizeMessage(upsertMessage) {
 
   const key = upsertMessage.key;
   const remoteJid = key?.remoteJid;
-
   if (!remoteJid || !upsertMessage.message) return null;
 
   const message = unwrapMessage(upsertMessage.message);
@@ -88,7 +90,6 @@ export function parseCommand(text, prefix) {
 
   const [rawName, ...args] = body.split(/\s+/);
   const name = rawName.toLowerCase();
-
   if (!/^[a-z0-9_-]+$/.test(name)) return null;
 
   return { name, args, argumentText: args.join(' ') };
