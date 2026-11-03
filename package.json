@@ -11,7 +11,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/core/connection.js && node --check src/core/message-handler.js && node --check src/commands/index.js && npm test"
+    "check": "node --check src/index.js && node --check src/core/connection.js && node --check src/core/message-handler.js && node --check src/core/terminal-ui.js && node --check src/commands/index.js && npm test"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "6.7.24",
